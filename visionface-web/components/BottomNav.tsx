@@ -8,7 +8,7 @@ const tabs = [
         href: '/main/scan',
         label: 'Scan',
         icon: (active: boolean) => (
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={active ? '#1E293B' : '#94A3B8'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={active ? '#134e4a' : '#a8a29e'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="12" cy="12" r="10" />
                 <path d="M12 8 C10 8, 8 9.5, 8 12 C8 14.5, 10 16, 12 16 C14 16, 16 14.5, 16 12" />
             </svg>
@@ -18,7 +18,7 @@ const tabs = [
         href: '/main/clinics',
         label: 'Kliniker',
         icon: (active: boolean) => (
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={active ? '#1E293B' : '#94A3B8'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={active ? '#134e4a' : '#a8a29e'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
                 <polyline points="9,22 9,12 15,12 15,22" />
             </svg>
@@ -28,7 +28,7 @@ const tabs = [
         href: '/main/education',
         label: 'Lexikon',
         icon: (active: boolean) => (
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={active ? '#1E293B' : '#94A3B8'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={active ? '#134e4a' : '#a8a29e'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M4 19.5A2.5 2.5 0 016.5 17H20" />
                 <path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z" />
             </svg>
@@ -38,7 +38,7 @@ const tabs = [
         href: '/main/profile',
         label: 'Profil',
         icon: (active: boolean) => (
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={active ? '#1E293B' : '#94A3B8'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={active ? '#134e4a' : '#a8a29e'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
                 <circle cx="12" cy="7" r="4" />
             </svg>
@@ -64,13 +64,13 @@ export default function BottomNav() {
                             >
                                 {/* Active background pill indicator */}
                                 {active && (
-                                    <div className="absolute inset-0 rounded-full scale-100 transition-transform duration-300 -z-10 bg-[linear-gradient(145deg,#ffffff_0%,#e0f2fe_100%)] border border-[#bae6fd]" />
+                                    <div className="absolute inset-0 rounded-full scale-100 transition-transform duration-300 -z-10 bg-[linear-gradient(145deg,#ffffff_0%,#f0fdf8_100%)] border border-[#2dd4a8]/30" />
                                 )}
 
                                 <div className={`transition-transform duration-300 ${active ? 'scale-110 -translate-y-0.5' : 'group-hover:scale-110 group-active:scale-95'}`}>
                                     {tab.icon(active)}
                                 </div>
-                                <span className={`text-[10px] font-medium transition-colors duration-300 mt-1 ${active ? 'text-[#1E293B]' : 'text-[#475569]'}`}>
+                                <span className={`text-[10px] font-medium transition-colors duration-300 mt-1 ${active ? 'text-[#134e4a] font-semibold' : 'text-[#78766f]'}`}>
                                     {tab.label}
                                 </span>
                             </Link>

@@ -3,7 +3,7 @@
 import type { ProportionScores } from '@/lib/faceAnalysis';
 import { getInterventionLevel, getRiskLevel } from '@/lib/treatmentSimulation';
 
-type FaceZone = keyof ProportionScores;
+type FaceZone = 'forehead' | 'eyes' | 'nose' | 'lips' | 'jaw';
 
 interface RecommendationsProps {
     baselineScores: ProportionScores;
@@ -29,7 +29,7 @@ interface ProcedureRecommendation {
 }
 
 const ZONE_META: Record<FaceZone, { label: string; icon: string; color: string }> = {
-    forehead: { label: 'Panna', icon: '⬆', color: '#e2e8f0' },
+    forehead: { label: 'Panna', icon: '⬆', color: '#d6d3cd' },
     eyes: { label: 'Ögon', icon: '👁', color: '#e0f2fe' },
     nose: { label: 'Näsa', icon: '◆', color: '#dbeafe' },
     lips: { label: 'Läppar', icon: '◇', color: '#fce7f3' },
@@ -235,12 +235,12 @@ export default function Recommendations({ baselineScores, targetScores, onBack, 
 
     return (
         <div className="vf-page-base flex flex-col h-full overflow-y-auto pb-6 relative">
-            <div className="absolute top-[-5%] right-[-5%] w-[50vw] h-[50vw] bg-[#E3F2FD] rounded-full blur-[100px] opacity-30 pointer-events-none" />
+            <div className="absolute top-[-5%] right-[-5%] w-[50vw] h-[50vw] bg-[#2dd4a8] rounded-full blur-[100px] opacity-30 pointer-events-none" />
 
             <div className="relative pt-12 pb-8 px-6 animate-fade-in-up">
                 <button
                     onClick={onBack}
-                    className="mb-6 flex items-center gap-2 text-[#475569] text-sm font-medium py-2 px-4 rounded-xl btn-3d-glass bg-white/40 hover:text-[#1E293B] transition-all"
+                    className="mb-6 flex items-center gap-2 text-[#52524e] text-sm font-medium py-2 px-4 rounded-xl bg-white/70 border border-[#d6d3cd]/60 hover:text-[#1a1a1a] shadow-sm transition-all"
                 >
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <line x1="19" y1="12" x2="5" y2="12"></line>
@@ -249,25 +249,25 @@ export default function Recommendations({ baselineScores, targetScores, onBack, 
                     Tillbaka till analys
                 </button>
 
-                <h1 className="text-3xl font-light text-[#1E293B] tracking-tight mb-2">
+                <h1 className="text-3xl font-light text-[#1a1a1a] tracking-tight mb-2">
                     Dynamisk Behandlingsplan
                 </h1>
-                <p className="text-[#475569] text-sm leading-relaxed max-w-sm">
+                <p className="text-[#52524e] text-sm leading-relaxed max-w-sm">
                     Rekommendationerna följer dina valda målvärden. Högre ändring ger större ingrepp och ofta högre risknivå.
                 </p>
             </div>
 
             <div className="px-6 mb-5">
-                <div className="vf-surface rounded-2xl p-4 border border-[#dbeafe]">
-                    <p className="text-[11px] uppercase tracking-widest text-[#64748b] font-semibold mb-2">Sammanfattning av val</p>
+                <div className="vf-surface rounded-2xl p-4 border border-[#d6d3cd]/40">
+                    <p className="text-[11px] uppercase tracking-widest text-[#78766f] font-semibold mb-2">Sammanfattning av val</p>
                     <div className="grid grid-cols-3 gap-2 text-center">
-                        <div className="rounded-xl bg-white/70 border border-[#e2e8f0] py-2 px-2">
-                            <p className="text-[10px] text-[#94a3b8] uppercase">Zoner ändrade</p>
-                            <p className="text-lg font-semibold text-[#1E293B]">{adjustedZones}</p>
+                        <div className="rounded-xl bg-white/70 border border-[#d6d3cd] py-2 px-2">
+                            <p className="text-[10px] text-[#a8a29e] uppercase">Zoner ändrade</p>
+                            <p className="text-lg font-semibold text-[#1a1a1a]">{adjustedZones}</p>
                         </div>
-                        <div className="rounded-xl bg-white/70 border border-[#e2e8f0] py-2 px-2">
-                            <p className="text-[10px] text-[#94a3b8] uppercase">Total ökning</p>
-                            <p className="text-lg font-semibold text-[#1E293B]">+{totalDelta}</p>
+                        <div className="rounded-xl bg-white/70 border border-[#d6d3cd] py-2 px-2">
+                            <p className="text-[10px] text-[#a8a29e] uppercase">Total ökning</p>
+                            <p className="text-lg font-semibold text-[#1a1a1a]">+{totalDelta}</p>
                         </div>
                         <div className="rounded-xl bg-[#fff7ed] border border-[#fdba74] py-2 px-2">
                             <p className="text-[10px] text-[#9a3412] uppercase">Övergripande risk</p>
@@ -289,15 +289,15 @@ export default function Recommendations({ baselineScores, targetScores, onBack, 
                                 {rec.icon}
                             </div>
                             <div>
-                                <h3 className="text-lg font-semibold text-[#1E293B]">{rec.name}</h3>
+                                <h3 className="text-lg font-semibold text-[#1a1a1a]">{rec.name}</h3>
                                 <div className="flex gap-1 mt-1">
                                     {rec.zones.map((z) => (
-                                        <span key={z} className="text-[10px] font-bold text-[#475569] uppercase tracking-wider bg-[#F1F5F9] px-2 py-0.5 rounded-full">
+                                        <span key={z} className="text-[10px] font-bold text-[#52524e] uppercase tracking-wider bg-[#e7e5e2] px-2 py-0.5 rounded-full">
                                             {z}
                                         </span>
                                     ))}
                                     {rec.delta > 0 && (
-                                        <span className="text-[10px] font-bold text-[#1E293B] uppercase tracking-wider bg-[#e0f2fe] px-2 py-0.5 rounded-full">
+                                        <span className="text-[10px] font-bold text-[#1a1a1a] uppercase tracking-wider bg-[#f0fdf8] px-2 py-0.5 rounded-full">
                                             {rec.fromScore}→{rec.toScore}
                                         </span>
                                     )}
@@ -306,9 +306,9 @@ export default function Recommendations({ baselineScores, targetScores, onBack, 
                         </div>
 
                         <div className="grid grid-cols-2 gap-2 mb-3">
-                            <div className="rounded-xl bg-[#f8fafc] border border-[#e2e8f0] px-3 py-2">
-                                <p className="text-[10px] uppercase tracking-wide text-[#94a3b8]">Ingreppsstorlek</p>
-                                <p className="text-sm font-semibold text-[#1E293B]">{rec.intervention}</p>
+                            <div className="rounded-xl bg-[#f8fafc] border border-[#d6d3cd] px-3 py-2">
+                                <p className="text-[10px] uppercase tracking-wide text-[#a8a29e]">Ingreppsstorlek</p>
+                                <p className="text-sm font-semibold text-[#1a1a1a]">{rec.intervention}</p>
                             </div>
                             <div className="rounded-xl bg-[#fff1f2] border border-[#fecdd3] px-3 py-2">
                                 <p className="text-[10px] uppercase tracking-wide text-[#9f1239]">Risknivå</p>
@@ -316,14 +316,14 @@ export default function Recommendations({ baselineScores, targetScores, onBack, 
                             </div>
                         </div>
 
-                        <p className="text-[#475569] text-sm mb-4 font-medium italic border-l-3 border-[#BBDEFB] pl-3 py-1">
+                        <p className="text-[#52524e] text-sm mb-4 font-medium italic border-l-3 border-[#2dd4a8] pl-3 py-1">
                             &quot;{rec.why}&quot;
                         </p>
 
                         <div className="space-y-4">
                             <div>
-                                <h4 className="text-xs font-bold text-[#1E293B] uppercase tracking-widest mb-1.5 opacity-60">Vad det innebär</h4>
-                                <p className="text-[#475569] text-sm leading-relaxed">{rec.whatItIs}</p>
+                                <h4 className="text-xs font-bold text-[#1a1a1a] uppercase tracking-widest mb-1.5 opacity-60">Vad det innebär</h4>
+                                <p className="text-[#52524e] text-sm leading-relaxed">{rec.whatItIs}</p>
                             </div>
 
                             <div className="bg-[#fff1f2] rounded-xl p-4 border border-[#fecdd3]/50">
@@ -352,9 +352,9 @@ export default function Recommendations({ baselineScores, targetScores, onBack, 
             <div className="mt-8 px-6 pb-8 animate-fade-in-up" style={{ animationDelay: '500ms', animationFillMode: 'both' }}>
                 <button
                     onClick={onContinue}
-                    className="group relative w-full overflow-hidden rounded-2xl py-4 transition-all duration-300 btn-3d-glass bg-white text-[#1E293B]"
+                    className="group relative w-full overflow-hidden rounded-2xl py-4 transition-all duration-300 bg-[#134e4a] text-white shadow-lg hover:bg-[#0d3d38] hover:shadow-xl"
                 >
-                    <div className="absolute inset-0 bg-[#BBDEFB]/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                    <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                     <span className="relative z-10 flex items-center justify-center gap-2">
                         Hitta Klinik för Behandling
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="transition-transform group-hover:translate-x-1">
@@ -363,7 +363,7 @@ export default function Recommendations({ baselineScores, targetScores, onBack, 
                         </svg>
                     </span>
                 </button>
-                <p className="text-center text-[10px] text-[#94a3b8] mt-4 max-w-[260px] mx-auto">
+                <p className="text-center text-[10px] text-[#a8a29e] mt-4 max-w-[260px] mx-auto">
                     Rekommendationer är vägledande. Slutlig behandlingsplan och riskbedömning görs alltid av legitimerad kliniker.
                 </p>
             </div>

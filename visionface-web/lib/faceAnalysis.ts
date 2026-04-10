@@ -1,107 +1,191 @@
 /**
  * faceAnalysis.ts
- * Computes proportions scores from MediaPipe FaceLandmarker results.
- * Landmark indices based on MediaPipe Face Mesh topology (468 landmarks).
+ * Ethnic-aware facial proportion analysis using MediaPipe landmarks.
+ * Computes raw ratios and scores them against ethnic-specific ideal ranges.
  */
 
-export interface ProportionScores {
-    forehead: number;  // Panna
-    eyes: number;      // Ögon
-    nose: number;      // Näsa
-    lips: number;      // Mun
-    jaw: number;       // Käke
+import { ETHNIC_PROFILES, getRecommendations, type Ethnicity, type Gender, type Range, type Recommendation } from './facialIdeals';
+
+export interface FaceLandmark {
+    x: number;
+    y: number;
+    z: number;
 }
 
-/** Euclidean distance between two 2D points */
+export interface ProportionScores {
+    forehead: number;
+    eyes: number;
+    nose: number;
+    lips: number;
+    jaw: number;
+    cheeks: number;
+    symmetry: number;
+    overall: number;
+}
+
+export interface RawMeasurements {
+    facialIndex: number;
+    foreheadRatio: number;
+    eyeSpacing: number;
+    noseProjection: number;
+    lipRatio: number;
+    jawRatio: number;
+    symmetry: number;
+    cheekboneRatio: number;
+}
+
+export interface AnalysisResult {
+    scores: ProportionScores;
+    measurements: RawMeasurements;
+    recommendations: Recommendation[];
+}
+
 function dist(a: { x: number; y: number }, b: { x: number; y: number }): number {
     return Math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2);
 }
 
-/**
- * Converts a ratio to a 0–100 score using a golden ratio target (φ ≈ 1.618).
- * The closer the ratio is to the target, the higher the score.
- */
-function ratioToScore(ratio: number, target: number, tolerance = 0.5): number {
-    const diff = Math.abs(ratio - target);
-    const score = Math.max(0, 100 - (diff / tolerance) * 100);
-    return Math.round(Math.min(100, score));
+function scoreFromRange(value: number, range: Range): number {
+    if (value >= range.min && value <= range.max) {
+        const distFromIdeal = Math.abs(value - range.ideal);
+        const maxDist = Math.max(range.ideal - range.min, range.max - range.ideal);
+        return Math.round(85 + 15 * (1 - distFromIdeal / (maxDist || 1)));
+    }
+    const rangeWidth = range.max - range.min;
+    const overshoot = value < range.min
+        ? (range.min - value) / rangeWidth
+        : (value - range.max) / rangeWidth;
+    return Math.round(Math.max(30, 85 - overshoot * 60));
 }
 
-/**
- * Compute proportions scores from a MediaPipe NormalizedLandmark array.
- * Returns scores for 5 face zones (0–100).
- */
-export function computeProportions(
-    landmarks: { x: number; y: number; z: number }[]
-): ProportionScores {
-    if (!landmarks || landmarks.length < 468) {
-        return { forehead: 0, eyes: 0, nose: 0, lips: 0, jaw: 0 };
+function computeSymmetry(landmarks: FaceLandmark[]): number {
+    const pairs: [number, number][] = [
+        [33, 263],   // outer eye corners
+        [70, 300],   // brow ends
+        [234, 454],  // jaw angles
+        [61, 291],   // mouth corners
+        [105, 334],  // brow peaks
+    ];
+
+    let totalDev = 0;
+    const noseTip = landmarks[4];
+
+    for (const [l, r] of pairs) {
+        const lp = landmarks[l];
+        const rp = landmarks[r];
+        if (!lp || !rp) continue;
+        const distL = dist(lp, noseTip);
+        const distR = dist(rp, noseTip);
+        const avg = (distL + distR) / 2;
+        if (avg > 0) totalDev += Math.abs(distL - distR) / avg;
     }
 
-    // Key landmark indices (MediaPipe Face Mesh 468 points)
-    const CHIN = landmarks[152];         // chin bottom
-    const FOREHEAD = landmarks[10];      // top of forehead
-    const LEFT_EYE_OUT = landmarks[33];  // outer left eye corner
-    const RIGHT_EYE_OUT = landmarks[263];// outer right eye corner
-    const LEFT_EYE_IN = landmarks[133];  // inner left eye corner
-    const RIGHT_EYE_IN = landmarks[362]; // inner right eye corner
+    return (totalDev / pairs.length) * 100; // percentage deviation
+}
+
+export function analyzeface(
+    landmarks: FaceLandmark[],
+    ethnicity: Ethnicity,
+    gender: Gender
+): AnalysisResult {
+    const profile = ETHNIC_PROFILES[ethnicity];
+    const ideals = profile.ideals;
+
+    if (!landmarks || landmarks.length < 468) {
+        const emptyScores: ProportionScores = { forehead: 0, eyes: 0, nose: 0, lips: 0, jaw: 0, cheeks: 0, symmetry: 0, overall: 0 };
+        return { scores: emptyScores, measurements: { facialIndex: 0, foreheadRatio: 0, eyeSpacing: 0, noseProjection: 0, lipRatio: 0, jawRatio: 0, symmetry: 0, cheekboneRatio: 0 }, recommendations: [] };
+    }
+
+    const CHIN = landmarks[152];
+    const FOREHEAD = landmarks[10];
+    const LEFT_EYE_OUT = landmarks[33];
+    const RIGHT_EYE_OUT = landmarks[263];
+    const LEFT_EYE_IN = landmarks[133];
+    const RIGHT_EYE_IN = landmarks[362];
     const NOSE_TIP = landmarks[4];
-    const NOSE_BASE = landmarks[2];
-    const LEFT_LIP = landmarks[61];      // left lip corner
-    const RIGHT_LIP = landmarks[291];    // right lip corner
+    const NOSE_BRIDGE = landmarks[168];
+    const LEFT_LIP = landmarks[61];
+    const RIGHT_LIP = landmarks[291];
     const UPPER_LIP = landmarks[13];
     const LOWER_LIP = landmarks[14];
     const LEFT_JAW = landmarks[234];
     const RIGHT_JAW = landmarks[454];
-    const EYE_TO_BROW_L = landmarks[105];// left brow top
-    const EYE_TO_BROW_R = landmarks[334];// right brow top
+    const LEFT_CHEEK = landmarks[116];
+    const RIGHT_CHEEK = landmarks[345];
+    const LEFT_BROW = landmarks[105];
+    const RIGHT_BROW = landmarks[334];
 
-    // Face total height
     const faceHeight = dist(FOREHEAD, CHIN) || 1;
+    const faceWidth = dist(LEFT_JAW, RIGHT_JAW) || 1;
 
-    // ── Panna (Forehead) ────────────────────────────────────────────────────────
-    // Target: forehead ~1/3 of face height (golden division)
+    // Facial index (height/width)
+    const facialIndex = faceHeight / faceWidth;
+
+    // Forehead ratio (forehead height / face height, ideal ~0.33)
     const eyeCenter = { x: (LEFT_EYE_OUT.x + RIGHT_EYE_OUT.x) / 2, y: (LEFT_EYE_OUT.y + RIGHT_EYE_OUT.y) / 2 };
     const foreheadHeight = dist(FOREHEAD, eyeCenter);
     const foreheadRatio = foreheadHeight / faceHeight;
-    const forehearScore = ratioToScore(foreheadRatio, 0.33, 0.12);
 
-    // ── Ögon (Eyes) ─────────────────────────────────────────────────────────────
-    // Target: eye width ≈ 1/5 of face width (rule of fifths)
-    const faceWidth = dist(LEFT_JAW, RIGHT_JAW) || 1;
-    const leftEyeWidth = dist(LEFT_EYE_OUT, LEFT_EYE_IN);
-    const rightEyeWidth = dist(RIGHT_EYE_IN, RIGHT_EYE_OUT);
-    const avgEyeWidth = (leftEyeWidth + rightEyeWidth) / 2;
-    const eyeRatio = avgEyeWidth / faceWidth;
-    const eyeScore = ratioToScore(eyeRatio, 0.2, 0.08);
+    // Eye spacing (IPD / face width)
+    const ipd = dist(LEFT_EYE_OUT, RIGHT_EYE_OUT);
+    const eyeSpacing = ipd / faceWidth;
 
-    // ── Näsa (Nose) ──────────────────────────────────────────────────────────────
-    // Target: nose width ≈ distance between inner eye corners
-    const innerEyeDist = dist(LEFT_EYE_IN, RIGHT_EYE_IN);
-    const noseWidth = dist({ x: NOSE_TIP.x - 0.02, y: NOSE_TIP.y }, { x: NOSE_TIP.x + 0.02, y: NOSE_TIP.y });
-    const noseHeight = dist(EYE_TO_BROW_L, NOSE_BASE);
-    const noseRatio = (noseHeight / faceHeight);
-    const noseScore = ratioToScore(noseRatio, 0.3, 0.1);
+    // Nose projection (Goode ratio approx: tip projection / nasal length)
+    const noseLength = dist(NOSE_BRIDGE, NOSE_TIP);
+    const noseTipProjection = Math.abs(NOSE_TIP.z - NOSE_BRIDGE.z) || noseLength * 0.55;
+    const noseProjection = noseTipProjection / (noseLength || 1);
 
-    // ── Mun (Lips) ────────────────────────────────────────────────────────────────
-    // Target: lip width ≈ 1.618 × lip height (golden ratio proportion)
-    const lipWidth = dist(LEFT_LIP, RIGHT_LIP);
-    const lipHeight = dist(UPPER_LIP, LOWER_LIP) * 3; // multiply to amplify subtle differences
-    const lipRatio = lipWidth / (lipHeight || 1);
-    const lipScore = ratioToScore(lipRatio, 1.618, 0.6);
+    // Lip ratio (upper lip height / lower lip height)
+    const upperLipHeight = dist(UPPER_LIP, { x: (LEFT_LIP.x + RIGHT_LIP.x) / 2, y: Math.min(UPPER_LIP.y, LEFT_LIP.y) });
+    const lowerLipHeight = dist(LOWER_LIP, { x: (LEFT_LIP.x + RIGHT_LIP.x) / 2, y: Math.max(LOWER_LIP.y, LEFT_LIP.y) });
+    const lipRatio = upperLipHeight / (lowerLipHeight || 1);
 
-    // ── Käke (Jaw) ────────────────────────────────────────────────────────────────
-    // Target: jaw width / forehead width — ideally slight taper
-    const foreheadWidth = dist(LEFT_EYE_OUT, RIGHT_EYE_OUT) * 1.3;
+    // Jaw ratio (bigonial / bizygomatic)
+    const cheekWidth = dist(LEFT_CHEEK, RIGHT_CHEEK);
     const jawWidth = dist(LEFT_JAW, RIGHT_JAW);
-    const jawRatio = jawWidth / (foreheadWidth || 1);
-    const jawScore = ratioToScore(jawRatio, 0.85, 0.2);
+    const jawRatio = jawWidth / (cheekWidth || 1);
 
-    return {
-        forehead: Math.max(55, forehearScore), // floor at 55 to avoid very low scores
-        eyes: Math.max(55, eyeScore),
-        nose: Math.max(55, noseScore),
-        lips: Math.max(55, lipScore),
-        jaw: Math.max(55, jawScore),
+    // Cheekbone ratio (fWHR: cheek width / upper face height)
+    const upperFaceHeight = dist(LEFT_BROW, LEFT_CHEEK);
+    const cheekboneRatio = cheekWidth / (upperFaceHeight || 1);
+
+    // Symmetry
+    const symmetry = computeSymmetry(landmarks);
+
+    const measurements: RawMeasurements = {
+        facialIndex,
+        foreheadRatio,
+        eyeSpacing,
+        noseProjection,
+        lipRatio,
+        jawRatio,
+        symmetry,
+        cheekboneRatio,
     };
+
+    // Score each zone against ethnic ideals
+    const foreheadScore = scoreFromRange(foreheadRatio, { min: 0.30, max: 0.36, ideal: 0.33 });
+    const eyeScore = scoreFromRange(eyeSpacing, ideals.ipdToFaceWidth);
+    const noseScore = scoreFromRange(noseProjection, ideals.noseGoodeRatio);
+    const lipScore = scoreFromRange(lipRatio, ideals.upperToLowerLipRatio);
+    const jawScore = scoreFromRange(jawRatio, ideals.bigonialToBizygomatic[gender]);
+    const cheekScore = scoreFromRange(cheekboneRatio, ideals.fWHR[gender]);
+    const symmetryScore = symmetry <= 2 ? 95 : symmetry <= 3 ? 85 : symmetry <= 5 ? 70 : Math.max(30, 85 - symmetry * 5);
+
+    const allScores = [foreheadScore, eyeScore, noseScore, lipScore, jawScore, cheekScore, symmetryScore];
+    const overall = Math.round(allScores.reduce((a, b) => a + b, 0) / allScores.length);
+
+    const scores: ProportionScores = {
+        forehead: foreheadScore,
+        eyes: eyeScore,
+        nose: noseScore,
+        lips: lipScore,
+        jaw: jawScore,
+        cheeks: cheekScore,
+        symmetry: symmetryScore,
+        overall,
+    };
+
+    const recommendations = getRecommendations(measurements, ethnicity, gender);
+
+    return { scores, measurements, recommendations };
 }

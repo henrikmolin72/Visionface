@@ -4,6 +4,89 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import gsap from 'gsap';
 import { Activity, BookOpenText, Clock3, ShieldAlert } from 'lucide-react';
 
+type GlossaryTerm = {
+    id: string;
+    term: string;
+    pronunciation: string;
+    definition: string;
+    category: 'anatomy' | 'procedure' | 'substance' | 'condition';
+    relatedProcedures: string[];
+};
+
+const GLOSSARY: GlossaryTerm[] = [
+    { id: 'hyaluronsyra', term: 'Hyaluronsyra', pronunciation: 'hya-lu-ron-sy-ra', definition: 'Kroppseget socker som binder vatten och ger volym. Används som fyllnadsmaterial i dermal filler och skinbooster.', category: 'substance', relatedProcedures: ['Dermal Filler', 'Skinbooster'] },
+    { id: 'botulinumtoxin', term: 'Botulinumtoxin', pronunciation: 'bo-tu-li-num-tok-sin', definition: 'Protein som tillfälligt blockerar muskelkontraktion. Används för att reducera dynamiska rynkor och ge ett uppfräschat utseende.', category: 'substance', relatedProcedures: ['Botulinumtoxin'] },
+    { id: 'rhinoplasty', term: 'Rhinoplastik', pronunciation: 'ri-no-plas-tik', definition: 'Kirurgisk förändring av näsans form, storlek eller funktion. Kan vara öppen (med hudsnitt) eller sluten (utan yttre snitt).', category: 'procedure', relatedProcedures: ['Rhinoplasty'] },
+    { id: 'mentoplasty', term: 'Mentoplastik', pronunciation: 'men-to-plas-tik', definition: 'Kirurgisk förstärkning eller minskning av hakans projektion med implantat eller benprocedurer.', category: 'procedure', relatedProcedures: ['Hakförstärkning'] },
+    { id: 'ptosis', term: 'Ptos', pronunciation: 'pto-sis', definition: 'Hängande ögonlock orsakad av försvagad muskulatur. Kan korrigeras med blepharoplastik.', category: 'condition', relatedProcedures: ['Ögonlockslyft'] },
+    { id: 'malar', term: 'Malarbenet', pronunciation: 'ma-lar-be-net', definition: 'Kindknoten (os zygomaticum). Prominenta malarben associeras med attraktiva ansiktsproportioner.', category: 'anatomy', relatedProcedures: ['Kindben', 'Dermal Filler'] },
+    { id: 'nasolabial', term: 'Nasolabiala veck', pronunciation: 'na-so-la-bi-a-la', definition: 'Veckarna som löper från näsvingarna till mungiporna. Djupnar med åldern och behandlas med filler.', category: 'anatomy', relatedProcedures: ['Dermal Filler'] },
+    { id: 'collagen', term: 'Kollagen', pronunciation: 'ko-la-gen', definition: 'Strukturprotein som ger huden fasthet och elasticitet. Produktionen minskar med åldern, vilket behandlas med PRP och skinbooster.', category: 'substance', relatedProcedures: ['PRP-behandling', 'Skinbooster'] },
+    { id: 'canthopexy', term: 'Canthopex', pronunciation: 'kan-to-peks', definition: 'Kirurgisk fixering av ögats yttre kantligament för att lyfta och strama ögonvrån.', category: 'procedure', relatedProcedures: ['Ögonlyft'] },
+    { id: 'genioplasty', term: 'Genioplastik', pronunciation: 'je-ni-o-plas-tik', definition: 'Osteotomi (bensnitt) av hakan för att flytta och ompositionera hakbenet kirurgiskt.', category: 'procedure', relatedProcedures: ['Hakförstärkning'] },
+    { id: 'bichectomy', term: 'Bichektomi', pronunciation: 'bi-jek-to-mi', definition: 'Kirurgiskt avlägsnande av Bichats fettkuddar i kinderna för att skapa mer skulpterade kindkonturer.', category: 'procedure', relatedProcedures: ['Kindben'] },
+    { id: 'symmetry', term: 'Ansiktssymmetri', pronunciation: 'an-sik-tes-si-me-tri', definition: 'Graden av överensstämmelse mellan ansiktets höger- och vänsterhalva. Hög symmetri associeras med hälsa och attraktion.', category: 'anatomy', relatedProcedures: ['Botox', 'Dermal Filler'] },
+    { id: 'golden_ratio', term: 'Gyllene snittet', pronunciation: 'gyl-le-ne-snit-tet', definition: 'Matematiskt förhållande (~1.618) som återfinns i vad som betraktas som harmoniska ansiktsproportioner.', category: 'anatomy', relatedProcedures: [] },
+];
+
+const CATEGORY_LABELS: Record<GlossaryTerm['category'], string> = {
+    anatomy: 'Anatomi',
+    procedure: 'Ingrepp',
+    substance: 'Substans',
+    condition: 'Tillstånd',
+};
+
+const CATEGORY_COLORS: Record<GlossaryTerm['category'], string> = {
+    anatomy: '#bae6fd',
+    procedure: '#c4b5fd',
+    substance: '#bbf7d0',
+    condition: '#fde68a',
+};
+
+function GlossaryCard({ term }: { term: GlossaryTerm }) {
+    const [expanded, setExpanded] = useState(false);
+    return (
+        <button
+            type="button"
+            onClick={() => setExpanded((e) => !e)}
+            className="w-full text-left vf-surface rounded-[1.4rem] p-4 vf-card-hover transition-all"
+        >
+            <div className="flex items-start justify-between gap-3">
+                <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-0.5">
+                        <h4 className="text-[15px] font-semibold text-[#0f172a]">{term.term}</h4>
+                        <span
+                            className="text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0"
+                            style={{ backgroundColor: CATEGORY_COLORS[term.category] + '66', color: '#1a1a1a' }}
+                        >
+                            {CATEGORY_LABELS[term.category]}
+                        </span>
+                    </div>
+                    <p className="text-[11px] text-[#a8a29e] italic">/{term.pronunciation}/</p>
+                </div>
+                <svg
+                    width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#a8a29e" strokeWidth="2" strokeLinecap="round"
+                    className={`transition-transform shrink-0 mt-1 ${expanded ? 'rotate-180' : ''}`}
+                >
+                    <polyline points="6 9 12 15 18 9" />
+                </svg>
+            </div>
+            {expanded && (
+                <div className="mt-3 space-y-2">
+                    <p className="text-[13px] leading-relaxed text-[#475569]">{term.definition}</p>
+                    {term.relatedProcedures.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 mt-2">
+                            {term.relatedProcedures.map((p) => (
+                                <span key={p} className="text-[10px] px-2 py-0.5 rounded-full bg-[#f3f0eb] text-[#52524e] font-medium">{p}</span>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            )}
+        </button>
+    );
+}
+
 type Procedure = {
     id: string;
     name: string;
@@ -103,6 +186,16 @@ export default function EducationPage() {
     const [selectedId, setSelectedId] = useState(PROCEDURES[0]?.id ?? '');
     const [typedLine, setTypedLine] = useState('');
     const [cursorVisible, setCursorVisible] = useState(true);
+    const [glossarySearch, setGlossarySearch] = useState('');
+    const [glossaryCategory, setGlossaryCategory] = useState<GlossaryTerm['category'] | 'all'>('all');
+
+    const filteredGlossary = useMemo(() => {
+        return GLOSSARY.filter((t) => {
+            const matchSearch = !glossarySearch || t.term.toLowerCase().includes(glossarySearch.toLowerCase()) || t.definition.toLowerCase().includes(glossarySearch.toLowerCase());
+            const matchCat = glossaryCategory === 'all' || t.category === glossaryCategory;
+            return matchSearch && matchCat;
+        });
+    }, [glossarySearch, glossaryCategory]);
 
     const selectedProcedure = useMemo(
         () => PROCEDURES.find((procedure) => procedure.id === selectedId) ?? PROCEDURES[0],
@@ -294,6 +387,49 @@ export default function EducationPage() {
                             </div>
                         )}
                     </article>
+                </section>
+
+                {/* Glossary section */}
+                <section data-library-reveal className="flex flex-col gap-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div>
+                            <p className="vf-kicker">Medicinsk ordlista</p>
+                            <h2 className="text-xl font-semibold vf-heading">Termer & Definitioner</h2>
+                        </div>
+                        <input
+                            type="text"
+                            placeholder="Sök term..."
+                            value={glossarySearch}
+                            onChange={(e) => setGlossarySearch(e.target.value)}
+                            className="vf-input max-w-xs text-sm"
+                        />
+                    </div>
+
+                    <div className="flex flex-wrap gap-2">
+                        {(['all', 'anatomy', 'procedure', 'substance', 'condition'] as const).map((cat) => (
+                            <button
+                                key={cat}
+                                onClick={() => setGlossaryCategory(cat)}
+                                className="text-xs px-3 py-1.5 rounded-full border transition-colors"
+                                style={{
+                                    borderColor: glossaryCategory === cat ? '#134e4a' : '#e2e0dc',
+                                    backgroundColor: glossaryCategory === cat ? '#134e4a' : 'white',
+                                    color: glossaryCategory === cat ? 'white' : '#52524e',
+                                }}
+                            >
+                                {cat === 'all' ? 'Alla' : CATEGORY_LABELS[cat]}
+                            </button>
+                        ))}
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+                        {filteredGlossary.map((term) => (
+                            <GlossaryCard key={term.id} term={term} />
+                        ))}
+                        {filteredGlossary.length === 0 && (
+                            <p className="col-span-full text-center py-8 vf-copy text-sm">Inga termer matchar sökningen.</p>
+                        )}
+                    </div>
                 </section>
 
                 <section data-library-reveal className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">

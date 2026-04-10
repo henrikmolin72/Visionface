@@ -32,7 +32,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="sv" className={`${manrope.variable} ${sora.variable} ${cormorantGaramond.variable}`}>
-      <body className="antialiased selection:bg-[#E3F2FD]">
+      <body className="antialiased selection:bg-[#2dd4a8]/20">
         <svg
           className="vf-noise-svg-defs"
           aria-hidden="true"

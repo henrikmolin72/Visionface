@@ -63,7 +63,7 @@ export default function AppTopBar() {
                 <button
                     type="button"
                     onClick={() => router.push('/main/scan')}
-                    className="hidden md:inline-flex vf-magnetic rounded-[1.1rem] border border-white/80 bg-white/90 px-3.5 py-2 text-[12px] font-semibold text-[#0f172a] shadow-[0_10px_24px_rgba(14,116,144,0.14)]"
+                    className="hidden md:inline-flex vf-magnetic rounded-[1.1rem] border border-[#2dd4a8]/30 bg-[#134e4a] px-3.5 py-2 text-[12px] font-semibold text-white shadow-[0_10px_24px_rgba(13,147,115,0.2)] hover:bg-[#0d3d38] transition-colors"
                 >
                     Start Scan
                 </button>
